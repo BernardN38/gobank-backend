@@ -1,0 +1,82 @@
+version: '3'
+
+services:
+
+  broker-service:
+    build:
+      context: ./broker-service
+      dockerfile: ./broker-service.dockerfile
+    restart: always
+    ports:
+      - "8080:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  identity-service:
+    build:
+      context: ./identity-service
+      dockerfile: ./identity-service.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  transaction-service:
+    build:
+      context: ./transaction-service
+      dockerfile: ./transaction-service.dockerfile
+    restart: always
+    links:
+      - listener-service
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  listener-service:
+    build:
+      context: ./listener-service
+      dockerfile: ./listener-service.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  authentication-service:
+    build:
+      context: ./auth-service
+      dockerfile: ./auth-service.dockerfile
+    restart: always
+    ports:
+      - "8081:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+
+#  postgres:
+#    image: 'postgres:14.0'
+#    ports:
+#      - "5432:5432"
+#    restart: always
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: password
+#      POSTGRES_DB: users
+#    volumes:
+#      - ./db-data/postgres/:/var/lib/postgresql/data/
+#
+
+  rabbitmq:
+    image: 'rabbitmq:3.9-alpine'
+    ports:
+      - "5672:5672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./db-data/rabbitmq/:/var/lib/rabbitmq/
